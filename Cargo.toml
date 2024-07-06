@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 clap-verbosity-flag = "2.2.0"
 toml = "0.8.14"
+which = "6.0.1"
 
 [dependencies.clap]
 version = "4.5.8"
@@ -16,13 +17,18 @@ features = ["std", "help", "derive"]
 version = "0.4.22"
 features = ["std"]
 
+[dependencies.rand]
+version = "0.8.5"
+default-features = false
+features = ["std", "log", "getrandom"]
+
 [dependencies.serde]
 version = "1.0.203"
 features = ["derive"]
 
 [dependencies.tokio]
 version = "1.38.0"
-features = ["rt"]
+features = ["process", "rt", "time"]
 
 [profile.release]
 codegen-units = 1

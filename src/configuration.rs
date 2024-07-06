@@ -21,7 +21,7 @@ impl Default for Ntfy {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize)]
 pub enum HostKind {
 	#[serde(rename = "*")]
 	Any,
