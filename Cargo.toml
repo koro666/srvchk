@@ -5,11 +5,16 @@ edition = "2021"
 
 [dependencies]
 clap-verbosity-flag = "2.2.0"
+toml = "0.8.14"
 
 [dependencies.clap]
 version = "4.5.8"
 default-features = false
 features = ["std", "help", "derive"]
+
+[dependencies.serde]
+version = "1.0.203"
+features = ["derive"]
 
 [profile.release]
 codegen-units = 1
