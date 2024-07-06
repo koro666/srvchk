@@ -12,6 +12,10 @@ version = "4.5.8"
 default-features = false
 features = ["std", "help", "derive"]
 
+[dependencies.log]
+version = "0.4.22"
+features = ["std"]
+
 [dependencies.serde]
 version = "1.0.203"
 features = ["derive"]
