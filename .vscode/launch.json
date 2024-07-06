@@ -1,0 +1,16 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+	{
+		"name": "srvchk",
+		"type": "cppdbg",
+		"request": "launch",
+		"program": "${workspaceFolder}/target/debug/srvchk",
+		"cwd": "${workspaceFolder}",
+		"args": [
+			"-v",
+			"-c",
+			"srvchk.conf"
+		],
+	}]
+}

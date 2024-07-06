@@ -5,7 +5,7 @@ mod logging;
 use arguments::Arguments;
 use clap::Parser;
 use configuration::Configuration;
-use log::info;
+use log::debug;
 use logging::Logger;
 use std::error::Error;
 
@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let cfg = Configuration::read(args.configuration.as_deref())?;
 
 	// TODO:
-	info!("{:?}", cfg);
+	debug!("{:?}", cfg);
 
 	Ok(())
 }

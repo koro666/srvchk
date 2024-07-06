@@ -23,8 +23,11 @@ impl Default for Ntfy {
 
 #[derive(Debug, Deserialize)]
 pub enum HostKind {
+	#[serde(rename = "*")]
 	Any,
+	#[serde(rename = "ipv4")]
 	IPv4,
+	#[serde(rename = "ipv6")]
 	IPv6,
 }
 
