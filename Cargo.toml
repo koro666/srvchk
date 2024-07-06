@@ -11,7 +11,7 @@ which = "6.0.1"
 [dependencies.clap]
 version = "4.5.8"
 default-features = false
-features = ["std", "help", "derive"]
+features = ["std", "help", "derive", "cargo"]
 
 [dependencies.log]
 version = "0.4.22"
@@ -21,6 +21,10 @@ features = ["std"]
 version = "0.8.5"
 default-features = false
 features = ["std", "log", "getrandom"]
+
+[dependencies.reqwest]
+version = "0.12.5"
+features = ["json"]
 
 [dependencies.serde]
 version = "1.0.203"

@@ -3,6 +3,7 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
+#[command(version)]
 pub struct Arguments {
 	#[command(flatten)]
 	pub verbose: Verbosity<InfoLevel>,

@@ -8,6 +8,7 @@ pub struct Ntfy {
 	pub username: Option<String>,
 	pub password: Option<String>,
 	pub topic: String,
+	pub icon: Option<String>,
 }
 
 impl Default for Ntfy {
@@ -17,12 +18,13 @@ impl Default for Ntfy {
 			username: None,
 			password: None,
 			topic: "srvchk".to_string(),
+			icon: None,
 		}
 	}
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
-pub enum HostKind {
+pub enum Family {
 	#[serde(rename = "*")]
 	Any,
 	#[serde(rename = "ipv4")]
@@ -34,8 +36,9 @@ pub enum HostKind {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Host {
-	pub name: String,
-	pub kind: HostKind,
+	pub name: Option<String>,
+	pub dns: String,
+	pub family: Family,
 	pub delay: f32,
 	pub jitter: f32,
 }
@@ -43,8 +46,9 @@ pub struct Host {
 impl Default for Host {
 	fn default() -> Self {
 		Self {
-			name: String::new(),
-			kind: HostKind::Any,
+			name: None,
+			dns: String::new(),
+			family: Family::Any,
 			delay: 60.0,
 			jitter: 10.0,
 		}
