@@ -104,6 +104,7 @@ async fn execute_one(ntfy: Arc<Ntfy>, host: Host, ping: Arc<PathBuf>, client: Cl
 	}
 }
 
+#[cfg(unix)]
 fn build_command(ping: &Path, host: &str, family: Family) -> Command {
 	let mut cmd = Command::new(ping);
 	cmd.args(&["-n", "-c", "2"]);
@@ -124,6 +125,32 @@ fn build_command(ping: &Path, host: &str, family: Family) -> Command {
 	cmd.stdout(Stdio::null());
 	cmd.stderr(Stdio::null());
 
+	cmd.kill_on_drop(true);
+	cmd
+}
+
+#[cfg(windows)]
+fn build_command(ping: &Path, host: &str, family: Family) -> Command {
+	let mut cmd = Command::new(ping);
+	cmd.args(&["-n", "2"]);
+
+	match family {
+		Family::IPv4 => {
+			cmd.arg("-4");
+		}
+		Family::IPv6 => {
+			cmd.arg("-6");
+		}
+		_ => {}
+	};
+
+	cmd.arg(host);
+
+	cmd.stdin(Stdio::null());
+	cmd.stdout(Stdio::null());
+	cmd.stderr(Stdio::null());
+
+	cmd.creation_flags(0x08000000u32);
 	cmd.kill_on_drop(true);
 	cmd
 }
