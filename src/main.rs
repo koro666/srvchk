@@ -12,22 +12,50 @@ use logging::Logger;
 use notifier::Client;
 use pinger::Pinger;
 use rand::{rngs::OsRng, Rng};
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{process::ExitCode, sync::Arc, time::Duration};
 use tokio::{runtime::Builder, task::JoinSet};
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> ExitCode {
 	let args = Arguments::parse();
-	Logger::new(args.verbose.log_level_filter()).install()?;
+	if let Err(error) = Logger::new(args.verbose.log_level_filter()).install() {
+		eprintln!("failed to setup logging: {}", error);
+		return ExitCode::FAILURE;
+	}
 
-	let cfg = Configuration::read(args.configuration.as_deref())?;
+	let cfg = match Configuration::read(args.configuration.as_deref()) {
+		Ok(result) => result,
+		Err(error) => {
+			error!("failed to read configuration: {}", error);
+			return ExitCode::FAILURE;
+		}
+	};
 
-	let ntfy = Client::new(cfg.ntfy)?;
-	let ping = Pinger::new()?;
+	let ntfy = match Client::new(cfg.ntfy) {
+		Ok(result) => result,
+		Err(error) => {
+			error!("failed to initialize notifier: {}", error);
+			return ExitCode::FAILURE;
+		}
+	};
 
-	let rt = Builder::new_current_thread().enable_all().build()?;
+	let ping = match Pinger::new() {
+		Ok(result) => result,
+		Err(error) => {
+			error!("failed to initialize pinger: {}", error);
+			return ExitCode::FAILURE;
+		}
+	};
+
+	let rt = match Builder::new_current_thread().enable_all().build() {
+		Ok(result) => result,
+		Err(error) => {
+			error!("failed to initialize runtime: {}", error);
+			return ExitCode::FAILURE;
+		}
+	};
+
 	rt.block_on(execute(ntfy, ping, cfg.hosts));
-
-	Ok(())
+	ExitCode::SUCCESS
 }
 
 async fn execute(ntfy: Client, ping: Pinger, hosts: Vec<Host>) {
@@ -46,7 +74,7 @@ async fn execute(ntfy: Client, ping: Pinger, hosts: Vec<Host>) {
 }
 
 async fn execute_one(ntfy: Client, ping: Arc<Pinger>, host: Host) {
-	let target = format!(concat!(module_path!(), ":{}"), host.dns);
+	let target = format!(concat!(module_path!(), "::<{}>"), host.dns);
 	debug!(target: &target, "starting");
 
 	let mut random = OsRng {};
