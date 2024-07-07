@@ -1,29 +1,8 @@
 use std::{error::Error, fs, path::Path};
 
+use crate::notifier::Target;
 use crate::pinger::Family;
 use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-#[serde(default)]
-pub struct Ntfy {
-	pub url: String,
-	pub username: Option<String>,
-	pub password: Option<String>,
-	pub topic: String,
-	pub icon: Option<String>,
-}
-
-impl Default for Ntfy {
-	fn default() -> Self {
-		Self {
-			url: "https://ntfy.sh/".to_string(),
-			username: None,
-			password: None,
-			topic: "srvchk".to_string(),
-			icon: None,
-		}
-	}
-}
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -50,14 +29,14 @@ impl Default for Host {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct Configuration {
-	pub ntfy: Ntfy,
+	pub ntfy: Target,
 	pub hosts: Vec<Host>,
 }
 
 impl Default for Configuration {
 	fn default() -> Self {
 		Configuration {
-			ntfy: Ntfy::default(),
+			ntfy: Target::default(),
 			hosts: Vec::new(),
 		}
 	}
