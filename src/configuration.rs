@@ -1,5 +1,7 @@
-use serde::Deserialize;
 use std::{error::Error, fs, path::Path};
+
+use crate::pinger::Family;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -21,16 +23,6 @@ impl Default for Ntfy {
 			icon: None,
 		}
 	}
-}
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-pub enum Family {
-	#[serde(rename = "*")]
-	Any,
-	#[serde(rename = "ipv4")]
-	IPv4,
-	#[serde(rename = "ipv6")]
-	IPv6,
 }
 
 #[derive(Debug, Deserialize)]

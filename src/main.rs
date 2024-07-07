@@ -1,24 +1,18 @@
 mod arguments;
 mod configuration;
 mod logging;
+mod pinger;
 
 use arguments::Arguments;
 use clap::{crate_name, crate_version, Parser};
-use configuration::{Configuration, Family, Host, Ntfy};
+use configuration::{Configuration, Host, Ntfy};
 use log::{debug, error, info, warn};
 use logging::Logger;
+use pinger::Pinger;
 use rand::{rngs::OsRng, Rng};
 use reqwest::{Client, ClientBuilder};
-use std::{
-	collections::HashMap,
-	error::Error,
-	path::{Path, PathBuf},
-	process::Stdio,
-	sync::Arc,
-	time::Duration,
-};
-use tokio::{process::Command, runtime::Builder, task::JoinSet};
-use which::which;
+use std::{collections::HashMap, error::Error, sync::Arc, time::Duration};
+use tokio::{runtime::Builder, task::JoinSet};
 
 static USER_AGENT: &str = concat!(crate_name!(), "/", crate_version!());
 
@@ -27,9 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	Logger::new(args.verbose.log_level_filter()).install()?;
 
 	let cfg = Configuration::read(args.configuration.as_deref())?;
-
-	let ping = which("ping")?;
-	debug!("ping binary: {}", ping.to_string_lossy());
+	let ping = Pinger::new()?;
 
 	let client = ClientBuilder::new().user_agent(USER_AGENT).build()?;
 
@@ -39,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	Ok(())
 }
 
-async fn execute(cfg: Configuration, ping: PathBuf, client: Client) {
+async fn execute(cfg: Configuration, ping: Pinger, client: Client) {
 	let ntfy = Arc::new(cfg.ntfy);
 	let ping = Arc::new(ping);
 
@@ -55,7 +47,7 @@ async fn execute(cfg: Configuration, ping: PathBuf, client: Client) {
 	while let Some(_) = set.join_next().await {}
 }
 
-async fn execute_one(ntfy: Arc<Ntfy>, host: Host, ping: Arc<PathBuf>, client: Client) {
+async fn execute_one(ntfy: Arc<Ntfy>, host: Host, ping: Arc<Pinger>, client: Client) {
 	let target = format!(concat!(module_path!(), ":{}"), host.dns);
 	debug!(target: &target, "starting");
 
@@ -69,15 +61,9 @@ async fn execute_one(ntfy: Arc<Ntfy>, host: Host, ping: Arc<PathBuf>, client: Cl
 			tokio::time::sleep(Duration::from_secs_f32(delay)).await;
 		}
 
-		let mut cmd = build_command(ping.as_ref(), &host.dns, host.family);
-		debug!(target: &target, "running {:?}", cmd.as_std());
-
-		let success = match cmd.status().await {
-			Err(error) => {
-				error!(target: &target, "execution failure: {}", error);
-				false
-			}
-			Ok(status) => status.success(),
+		let success = match ping.ping(&host.dns, host.family).await {
+			Err(_) => false,
+			Ok(status) => status,
 		};
 
 		if success == reachable {
@@ -102,57 +88,6 @@ async fn execute_one(ntfy: Arc<Ntfy>, host: Host, ping: Arc<PathBuf>, client: Cl
 			}
 		}
 	}
-}
-
-#[cfg(unix)]
-fn build_command(ping: &Path, host: &str, family: Family) -> Command {
-	let mut cmd = Command::new(ping);
-	cmd.args(&["-n", "-c", "2"]);
-
-	match family {
-		Family::IPv4 => {
-			cmd.arg("-4");
-		}
-		Family::IPv6 => {
-			cmd.arg("-6");
-		}
-		_ => {}
-	};
-
-	cmd.args(&["--", host]);
-
-	cmd.stdin(Stdio::null());
-	cmd.stdout(Stdio::null());
-	cmd.stderr(Stdio::null());
-
-	cmd.kill_on_drop(true);
-	cmd
-}
-
-#[cfg(windows)]
-fn build_command(ping: &Path, host: &str, family: Family) -> Command {
-	let mut cmd = Command::new(ping);
-	cmd.args(&["-n", "2"]);
-
-	match family {
-		Family::IPv4 => {
-			cmd.arg("-4");
-		}
-		Family::IPv6 => {
-			cmd.arg("-6");
-		}
-		_ => {}
-	};
-
-	cmd.arg(host);
-
-	cmd.stdin(Stdio::null());
-	cmd.stdout(Stdio::null());
-	cmd.stderr(Stdio::null());
-
-	cmd.creation_flags(0x08000000u32);
-	cmd.kill_on_drop(true);
-	cmd
 }
 
 async fn notify_down(ntfy: &Ntfy, host: &Host, client: &Client) -> reqwest::Result<()> {
