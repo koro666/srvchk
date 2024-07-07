@@ -1,0 +1,26 @@
+#!/usr/bin/env -S podman build --output=output/alpine --file
+FROM alpine:3.20 AS builder
+
+RUN \
+--mount=type=cache,id=apk,target=/etc/apk/cache \
+apk upgrade --clean-protected && \
+apk add shadow alpine-sdk openssl-dev rustup
+
+RUN \
+useradd -d /var/empty -M -s /sbin/nologin builder && \
+mkdir /build && \
+chown builder:builder /build
+
+USER builder:builder
+WORKDIR /build
+
+ENV RUSTUP_HOME=/build/.rustup
+ENV CARGO_HOME=/build/.cargo
+RUN rustup-init -q -y --no-modify-path --default-toolchain stable --target x86_64-unknown-linux-musl
+
+COPY --chown=builder:builder . /build
+
+RUN RUSTFLAGS='-Ctarget-feature=-crt-static' /build/.cargo/bin/cargo build --target=x86_64-unknown-linux-musl --release
+
+FROM scratch
+COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/srvchk /

@@ -1,0 +1,31 @@
+#!/usr/bin/env -S podman build --output=output/archlinux --file
+FROM archlinux:latest AS builder
+
+RUN \
+--mount=type=cache,id=pacman,target=/var/cache/pacman/pkg \
+--mount=type=cache,id=pacman.db,target=/var/lib/pacman/sync \
+pacman -Sy --noconfirm && \
+pacman -S --noconfirm archlinux-keyring && \
+pacman -Su --noconfirm && \
+pacman -S --noconfirm base-devel rustup
+
+RUN \
+useradd -d /var/empty -M -s /sbin/nologin builder && \
+mkdir /build && \
+chown builder:builder /build
+
+USER builder:builder
+WORKDIR /build
+ENV RUSTUP_HOME=/build/.rustup
+ENV CARGO_HOME=/build/.cargo
+
+RUN \
+rustup default stable && \
+rustup target add x86_64-unknown-linux-gnu
+
+COPY --chown=builder:builder . /build
+
+RUN cargo build --target=x86_64-unknown-linux-gnu --release
+
+FROM scratch
+COPY --from=builder /build/target/x86_64-unknown-linux-gnu/release/srvchk /
